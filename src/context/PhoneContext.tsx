@@ -11,13 +11,15 @@ type PhoneContextType = {
   isWifiConnected: boolean;
   isCellularConnected: boolean;
   cellularStrength: number;
+  wifiSignalStrength: number;
+  connectedWifiName: string | null;
   storageUsed: number;
   totalStorage: number;
   ramUsed: number;
   totalRam: number;
   currentApp: string | null;
   setCurrentApp: (app: string | null) => void;
-  toggleWifi: () => void;
+  toggleWifi: (state?: boolean, networkName?: string) => void;
   toggleCellular: () => void;
   setBatteryCharging: (charging: boolean) => void;
   simulateCall: (phoneNumber: string, name?: string) => void;
@@ -36,12 +38,17 @@ type PhoneContextType = {
   setIsLocked: (locked: boolean) => void;
   shutdownPhone: () => void;
   restartPhone: () => void;
-  // isPowerMenuOpen: boolean;
-  // setPowerMenuOpen: (open: boolean) => void;
   isPoweringOff: boolean;
   isRestarting: boolean;
   isShutDown: boolean;
   terminateApp: (appName: string) => void;
+  setWallpaperFromGallery: (imageUrl: string) => void;
+  wallpaperImage: string | null;
+  wifiSignalStrength: number;
+  connectedWifiName: string | null;
+  wifiIp: string;
+  setCustomWifiSignal: (strength: number) => void;
+  setCustomWifiIp: (ip: string) => void;
 };
 
 const PhoneContext = createContext<PhoneContextType | undefined>(undefined);
@@ -74,6 +81,8 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isWifiConnected, setIsWifiConnected] = useState(true);
   const [isCellularConnected, setIsCellularConnected] = useState(true);
   const [cellularStrength, setCellularStrength] = useState(4);
+  const [wifiSignalStrength, setWifiSignalStrength] = useState(85);
+  const [connectedWifiName, setConnectedWifiName] = useState<string | null>("Red Hogar");
   const [storageUsed, setStorageUsed] = useState(28);
   const [totalStorage, setTotalStorage] = useState(64);
   const [ramUsed, setRamUsed] = useState(3.2);
@@ -88,10 +97,10 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
   const [appHistory, setAppHistory] = useState<string[]>([]);
   const [isRecentsOpen, setIsRecentsOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
-  //const [isPowerMenuOpen, setPowerMenuOpen] = useState(false);
   const [isPoweringOff, setIsPoweringOff] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
   const [isShutDown, setIsShutDown] = useState(false);
+  const [wallpaperImage, setWallpaperImage] = useState<string | null>(null);
   const [runningApps, setRunningApps] = useState([
     { name: "Sistema", ram: 1.6, icon: "database" },
     { name: "Cámara", ram: 0.8, icon: "camera" },
@@ -100,15 +109,13 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
     { name: "Aplicaciones en Segundo Plano", ram: 0.1, icon: "database" },
   ]);
 
+  const [wifiIp, setWifiIp] = useState<string>("192.168.1.5");
+
   // Sync with device battery
   useEffect(() => {
-    // Check if the Battery API is available
     if ("getBattery" in navigator) {
       const updateBatteryStatus = (battery: any) => {
-        // Update battery level (0 to 100)
         setBatteryLevel(Math.floor(battery.level * 100));
-
-        // Update charging status
         setIsCharging(battery.charging);
       };
 
@@ -116,10 +123,8 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
           const battery: any = await (navigator as any).getBattery();
 
-          // Initial update
           updateBatteryStatus(battery);
 
-          // Add event listeners for changes
           battery.addEventListener("levelchange", () =>
             updateBatteryStatus(battery)
           );
@@ -136,24 +141,67 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log(
         "Battery API not supported, using fallback battery simulation"
       );
-      // Fallback to simulated battery if Battery API not available
       const interval = setInterval(() => {
         if (isCharging) {
           setBatteryLevel((prev) => Math.min(prev + 1, 100));
         } else {
           setBatteryLevel((prev) => Math.max(prev - 0.1, 0));
         }
-      }, 10000); // Update every 10 seconds
+      }, 10000);
 
       return () => clearInterval(interval);
     }
   }, [isCharging]);
 
+  // WiFi signal strength simulation
+  useEffect(() => {
+    if (isWifiConnected) {
+      if ('connection' in navigator && (navigator as any).connection) {
+        const connection = (navigator as any).connection;
+        
+        if (connection.addEventListener) {
+          const updateSignalStrength = () => {
+            const effectiveType = connection.effectiveType;
+            let strength = 75;
+            
+            if (effectiveType === '4g') {
+              strength = 85 + Math.random() * 15;
+            } else if (effectiveType === '3g') {
+              strength = 60 + Math.random() * 20;
+            } else if (effectiveType === '2g') {
+              strength = 30 + Math.random() * 30;
+            } else {
+              strength = 10 + Math.random() * 20;
+            }
+            
+            setWifiSignalStrength(Math.floor(strength));
+          };
+          
+          updateSignalStrength();
+          connection.addEventListener('change', updateSignalStrength);
+          
+          return () => {
+            connection.removeEventListener('change', updateSignalStrength);
+          };
+        }
+      }
+      
+      const interval = setInterval(() => {
+        const baseStrength = 65;
+        const fluctuation = Math.random() * 35;
+        setWifiSignalStrength(Math.floor(baseStrength + fluctuation));
+      }, 10000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setWifiSignalStrength(0);
+    }
+  }, [isWifiConnected]);
+
   // RAM management
   useEffect(() => {
     const ramInterval = setInterval(() => {
       setRamUsed((prev) => {
-        // Fluctuate RAM between 2.8 and 4.2 GB
         const randomChange = Math.random() * 0.3 - 0.15;
         const newValue = Math.max(2.8, Math.min(4.2, prev + randomChange));
         return parseFloat(newValue.toFixed(1));
@@ -219,7 +267,6 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
     setTimeout(() => {
       setIsShutDown(true);
       setIsPoweringOff(false);
-      //setPowerMenuOpen(false);
     }, 2000);
   };
 
@@ -232,7 +279,6 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLocked(true);
         setCurrentApp(null);
         setIsRestarting(false);
-        // setPowerMenuOpen(false);
       }, 3000);
     }, 2000);
   };
@@ -241,11 +287,15 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
   const terminateApp = (appName: string) => {
     setRunningApps((prev) => {
       const updatedApps = prev.filter((app) => app.name !== appName);
-      // Recalculate RAM usage
       const releasedRam = prev.find((app) => app.name === appName)?.ram || 0;
       setRamUsed((prevRam) => Math.max(1.5, prevRam - releasedRam));
       return updatedApps;
     });
+  };
+
+  // Set wallpaper from gallery
+  const setWallpaperFromGallery = (imageUrl: string) => {
+    setWallpaperImage(imageUrl);
   };
 
   const getRecentApps = () => {
@@ -259,8 +309,20 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
       .slice(0, 5);
   };
 
-  const toggleWifi = () => {
-    setIsWifiConnected((prev) => !prev);
+  const setCustomWifiSignal = (strength: number) => setWifiSignalStrength(strength);
+  const setCustomWifiIp = (ip: string) => setWifiIp(ip);
+
+  const toggleWifi = (state?: boolean, networkName?: string) => {
+    const newState = typeof state !== 'undefined' ? state : !isWifiConnected;
+    setIsWifiConnected(newState);
+    
+    if (newState && networkName) {
+      setConnectedWifiName(networkName);
+    } else if (!newState) {
+      setConnectedWifiName(null);
+      setWifiSignalStrength(0);
+      setWifiIp("-");
+    }
   };
 
   const toggleCellular = () => {
@@ -268,7 +330,6 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const setBatteryCharging = (charging: boolean) => {
-    // Only update the charging icon, don't affect real battery charging
     setIsCharging(charging);
   };
 
@@ -276,7 +337,6 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsInCall(true);
     setCurrentCallNumber(phoneNumber);
     setCurrentCallName(name || null);
-    // Cambiar a la aplicación de teléfono
     setCurrentApp("phone");
   };
 
@@ -330,6 +390,8 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
     isWifiConnected,
     isCellularConnected,
     cellularStrength,
+    wifiSignalStrength,
+    connectedWifiName,
     storageUsed,
     totalStorage,
     ramUsed,
@@ -355,12 +417,17 @@ export const PhoneProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLocked,
     shutdownPhone,
     restartPhone,
-    //isPowerMenuOpen,
-    //setPowerMenuOpen,
     isPoweringOff,
     isRestarting,
     isShutDown,
     terminateApp,
+    setWallpaperFromGallery,
+    wallpaperImage,
+    wifiSignalStrength,
+    connectedWifiName,
+    wifiIp,
+    setCustomWifiSignal,
+    setCustomWifiIp,
   };
 
   return (

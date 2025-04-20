@@ -1,3 +1,4 @@
+
 import React from "react";
 import { usePhone } from "@/context/PhoneContext";
 import AppIcon from "./AppIcon";
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 
 const HomeScreen: React.FC = () => {
-  const { setCurrentApp } = usePhone();
+  const { setCurrentApp, wallpaperImage } = usePhone();
 
   const apps = [
     { name: "Teléfono", icon: Phone, color: "bg-green-500", appId: "phone" },
@@ -101,14 +102,20 @@ const HomeScreen: React.FC = () => {
     },
   ];
 
-  return (
-    <div
-      className="h-full p-6 pt-12 bg-cover bg-center"
-      style={{
+  // Set background style based on whether there's a custom wallpaper
+  const backgroundStyle = wallpaperImage
+    ? {
+        backgroundImage: `url(${wallpaperImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }
+    : {
         backgroundImage:
           "linear-gradient(to bottom, #4c669f, #3b5998, #192f6a)",
-      }}
-    >
+      };
+
+  return (
+    <div className="h-full p-6 pt-12 bg-cover bg-center" style={backgroundStyle}>
       <div className="grid grid-cols-4 gap-x-4 gap-y-6">
         {apps.map((app) => (
           <AppIcon
