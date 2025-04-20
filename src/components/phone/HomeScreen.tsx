@@ -19,6 +19,7 @@ import {
   Banknote,
   Joystick,
   University,
+  Book
 } from "lucide-react";
 
 const HomeScreen: React.FC = () => {
@@ -92,6 +93,12 @@ const HomeScreen: React.FC = () => {
       appId: "slither",
     },
     { name: "UJAP", icon: University, color: "bg-blue-600", appId: "ujap" },
+    {
+      name: "Manual",
+      icon: Book,
+      color: "bg-blue-500",
+      appId: "manual"
+    },
   ];
 
   return (

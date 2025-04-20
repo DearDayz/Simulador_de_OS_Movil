@@ -19,11 +19,11 @@ const PhoneFrame: React.FC<PhoneFrameProps> = ({ children }) => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4">
       <div className="relative w-full max-w-[375px] h-[750px] bg-phone-frame rounded-[40px] overflow-hidden shadow-2xl border-8 border-phone-frame">
-        {/* Altavoz y cámara del teléfono */}
+        {/* Reducir el tamaño del adorno de la cámara */}
         <div className="absolute top-0 left-0 right-0 flex justify-center z-10 pt-1">
-          <div className="w-40 h-6 bg-black rounded-b-2xl flex items-center justify-center">
-            <div className="w-16 h-2 bg-gray-800 rounded-full mr-4"></div>
-            <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+          <div className="w-32 h-5 bg-black rounded-b-2xl flex items-center justify-center">
+            <div className="w-12 h-1.5 bg-gray-800 rounded-full mr-3"></div>
+            <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
           </div>
         </div>
         

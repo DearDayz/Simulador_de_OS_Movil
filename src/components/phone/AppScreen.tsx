@@ -14,11 +14,12 @@ import CalendarApp from "./apps/CalendarApp";
 import ContactsApp from "./apps/ContactsApp";
 import MessagesApp from "./apps/MessagesApp";
 import WebViewApp from "./apps/WebViewApp";
+import ManualApp from "./apps/ManualApp";
+import SystemInfoScreen from "./SystemInfoScreen";
 
 const AppScreen: React.FC = () => {
   const { currentApp } = usePhone();
   
-  // Listen for manual camera shutdown events
   useEffect(() => {
     const handleCameraShutdown = () => {
       console.log("Camera forced shutdown event received");
@@ -33,13 +34,12 @@ const AppScreen: React.FC = () => {
     };
   }, []);
   
-  // Renderizar la aplicación apropiada según currentApp
   const renderApp = () => {
     switch (currentApp) {
       case "phone":
         return <PhoneApp />;
       case "camera":
-        return <CameraApp key="camera-app" />; // Key ensures component remounts when navigating back
+        return <CameraApp key="camera-app" />;
       case "microphone":
         return <MicrophoneApp />;
       case "battery":
@@ -66,6 +66,10 @@ const AppScreen: React.FC = () => {
       case "slither":
       case "ujap":
         return <WebViewApp />;
+      case "manual":
+        return <ManualApp />;
+      case "info":
+        return <SystemInfoScreen />;
       default:
         return null;
     }
